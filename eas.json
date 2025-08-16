@@ -8,25 +8,11 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal",
-      "channel": "preview"
+      "distribution": "internal"
     },
-    "production": {
-      "channel": "production"
-    }
+    "production": {}
   },
   "submit": {
     "production": {}
-  },
-  "update": {
-    "development": {
-      "channel": "development"
-    },
-    "preview": {
-      "channel": "preview"
-    },
-    "production": {
-      "channel": "production"
-    }
   }
 }
