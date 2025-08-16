@@ -1,2 +1,0 @@
-# Lugstars-Inventory
-Inventory System 
