@@ -6,6 +6,9 @@ export interface Component3D {
   postProcessingCompleted: number;
   postProcessingPending: number;
   type: '3d_component';
+  batchSize?: number;
+  printTimeMinutes?: number;
+  requiresPostProcessing?: boolean; // Default true, set false for components that are ready when printed
 }
 
 export interface PurchasedComponent {
@@ -13,6 +16,7 @@ export interface PurchasedComponent {
   name: string;
   quantity: number;
   unit: string;
+  lowStockThreshold?: number;
   type: 'purchased_component';
 }
 
@@ -45,6 +49,45 @@ export interface ProductRecipe {
   productId: number;
   partId: number;
   quantityRequired: number;
+}
+
+// Print Planning Types
+export interface PrintPriority {
+  componentId: number;
+  componentName: string;
+  currentStock: number;
+  needed: number;
+  shortage: number;
+  batchSize: number;
+  batchesNeeded: number;
+  printTimeMinutes: number;
+  totalPrintTime: number;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+}
+
+export interface PostProcessingTask {
+  componentId: number;
+  componentName: string;
+  pendingQuantity: number;
+  priority: 'critical' | 'urgent' | 'medium' | 'low';
+  reason: string;
+  blocksProduction: boolean;
+}
+
+export interface AssemblyTask {
+  partName: string;
+  componentsReady: boolean;
+  missingComponents: string[];
+  canAssemble: number;
+  needed: number;
+  urgency: 'critical' | 'urgent' | 'medium' | 'low';
+  reason: string;
+}
+
+export interface BatchSettings {
+  componentId: number;
+  batchSize: number;
+  printTimeMinutes: number;
 }
 
 // Component definitions based on your requirements
@@ -106,7 +149,7 @@ export const PURCHASED_COMPONENT_DEFINITIONS = {
 export const PART_DEFINITIONS = {
   'Bowler': {
     components3D: [
-      { name: 'Bowler Gantry', quantity: 1 },
+      // Note: Bowler Gantry is a separate component, not part of Bowler assembly
       { name: 'Bowler Floor', quantity: 1 },
       { name: 'Bowler Arm', quantity: 1 },
       { name: 'Bowler Chute', quantity: 1 },
@@ -119,7 +162,7 @@ export const PART_DEFINITIONS = {
   },
   'Batter': {
     components3D: [
-      { name: 'Batter Gantry', quantity: 1 },
+      // Note: Batter Gantry is a separate component, not part of Batter assembly
       { name: 'Batter Handle', quantity: 1 },
       { name: 'Batter Lid', quantity: 1 },
       { name: 'Batter Cap', quantity: 1 },
@@ -155,6 +198,8 @@ export const PRODUCT_DEFINITIONS = {
       { name: 'Fielder Medium', quantity: 3 },
       { name: 'Fielder Low', quantity: 3 },
       { name: 'Stumps', quantity: 1 },
+      { name: 'Batter Gantry', quantity: 1 },
+      { name: 'Bowler Gantry', quantity: 1 },
     ],
     assembledParts: [
       { name: 'Bowler', quantity: 1 },

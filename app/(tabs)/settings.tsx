@@ -1,11 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Card, Title, Button, Text, List, Divider } from 'react-native-paper';
+import { Card, Title, Button, Text, List, Divider, TextInput, Modal, Portal } from 'react-native-paper';
 import { DatabaseService } from '../../services/DatabaseService';
 
 export default function SettingsScreen() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [targetProductsBuffer, setTargetProductsBuffer] = useState(10);
+  const [bufferModalVisible, setBufferModalVisible] = useState(false);
+  const [bufferInputValue, setBufferInputValue] = useState('10');
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      const buffer = await DatabaseService.getTargetProductsBuffer();
+      setTargetProductsBuffer(buffer);
+      setBufferInputValue(buffer.toString());
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  };
+
+  const handleUpdateProductsBuffer = async () => {
+    const newValue = parseInt(bufferInputValue);
+    if (isNaN(newValue) || newValue < 1 || newValue > 50) {
+      Alert.alert('Invalid Value', 'Please enter a number between 1 and 50');
+      return;
+    }
+
+    try {
+      await DatabaseService.setTargetProductsBuffer(newValue);
+      setTargetProductsBuffer(newValue);
+      setBufferModalVisible(false);
+      Alert.alert('Success', `Production target updated to ${newValue} products`);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update setting');
+    }
+  };
 
   const handleExportData = async () => {
     setIsExporting(true);
@@ -74,6 +108,36 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <Card style={styles.card}>
+        <Card.Content>
+          <Title>Production Planning</Title>
+          <Text style={styles.description}>
+            Configure how the app calculates print queue recommendations.
+          </Text>
+        </Card.Content>
+      </Card>
+
+      <Card style={styles.card}>
+        <Card.Content>
+          <List.Section>
+            <List.Item
+              title="Target Products Buffer"
+              description={`Currently set to ${targetProductsBuffer} products - Print queue aims to have enough components for this many complete products`}
+              left={props => <List.Icon {...props} icon="target" />}
+              right={() => (
+                <Button
+                  mode="contained"
+                  onPress={() => setBufferModalVisible(true)}
+                  style={styles.actionButton}
+                >
+                  Edit
+                </Button>
+              )}
+            />
+          </List.Section>
+        </Card.Content>
+      </Card>
+
       <Card style={styles.card}>
         <Card.Content>
           <Title>Data Management</Title>
@@ -185,6 +249,56 @@ export default function SettingsScreen() {
           </Text>
         </Card.Content>
       </Card>
+
+      <Portal>
+        <Modal
+          visible={bufferModalVisible}
+          onDismiss={() => setBufferModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Title>Set Target Products Buffer</Title>
+          
+          <Text style={styles.modalText}>
+            How many complete products should the print queue aim for? This determines 
+            how far ahead you want to print components.
+          </Text>
+          
+          <TextInput
+            label="Target Products"
+            value={bufferInputValue}
+            onChangeText={setBufferInputValue}
+            keyboardType="numeric"
+            style={styles.input}
+            mode="outlined"
+          />
+
+          <Text style={styles.helperText}>
+            • Lower values (3-5): Just-in-time production, less inventory
+            • Higher values (15-20): Build ahead, more buffer stock
+            • Recommended: 10 for balanced production
+          </Text>
+
+          <View style={styles.modalButtons}>
+            <Button
+              mode="outlined"
+              onPress={() => {
+                setBufferInputValue(targetProductsBuffer.toString());
+                setBufferModalVisible(false);
+              }}
+              style={styles.modalButton}
+            >
+              Cancel
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleUpdateProductsBuffer}
+              style={styles.modalButton}
+            >
+              Update
+            </Button>
+          </View>
+        </Modal>
+      </Portal>
     </ScrollView>
   );
 }
@@ -224,5 +338,34 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: 'bold',
     color: '#333',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    margin: 20,
+    borderRadius: 8,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  input: {
+    marginBottom: 16,
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#888',
+    marginBottom: 20,
+    lineHeight: 18,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  modalButton: {
+    minWidth: 80,
   },
 });

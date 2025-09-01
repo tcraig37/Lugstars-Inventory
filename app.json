@@ -21,7 +21,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.tcraig37.lugstarsinventory"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -40,6 +41,12 @@
         "projectId": "29fc5ea9-20a5-40db-9622-1ddd07feddcb"
       }
     },
-    "owner": "tcraig37"
+    "owner": "tcraig37",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/29fc5ea9-20a5-40db-9622-1ddd07feddcb"
+    }
   }
 }

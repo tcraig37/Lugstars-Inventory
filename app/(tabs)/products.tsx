@@ -35,33 +35,23 @@ export default function ProductsScreen() {
     loadData();
   }, []);
 
-  const calculateMaxProducts = () => {
-    // For the Complete Cricket Set
-    const bowlerParts = parts.find(p => p.name === 'Bowler')?.assembled || 0;
-    const batterParts = parts.find(p => p.name === 'Batter')?.assembled || 0;
+  const getComponentAvailability = () => {
+    // For the Complete Cricket Set - use quantity (total available) not assembled
+    const bowlerParts = parts.find(p => p.name === 'Bowler')?.quantity || 0;
+    const batterParts = parts.find(p => p.name === 'Batter')?.quantity || 0;
     
-    // Check full parts (6 fence corners is limiting)
+    // Check all required 3D components (fullParts)
     const fenceCorners = components3D.find(c => c.name === 'Fence Corner')?.postProcessingCompleted || 0;
-    const fenceMaxProducts = Math.floor(fenceCorners / 6);
-    
     const fenceStraight = components3D.find(c => c.name === 'Fence Straight')?.postProcessingCompleted || 0;
-    const fenceStraightMax = Math.floor(fenceStraight / 4);
-    
     const fencePlayer = components3D.find(c => c.name === 'Fence Player')?.postProcessingCompleted || 0;
-    const fencePlayerMax = Math.floor(fencePlayer / 2);
-    
     const fielderHigh = components3D.find(c => c.name === 'Fielder High')?.postProcessingCompleted || 0;
-    const fielderHighMax = Math.floor(fielderHigh / 3);
-    
     const fielderMedium = components3D.find(c => c.name === 'Fielder Medium')?.postProcessingCompleted || 0;
-    const fielderMediumMax = Math.floor(fielderMedium / 3);
-    
     const fielderLow = components3D.find(c => c.name === 'Fielder Low')?.postProcessingCompleted || 0;
-    const fielderLowMax = Math.floor(fielderLow / 3);
-    
     const stumps = components3D.find(c => c.name === 'Stumps')?.postProcessingCompleted || 0;
+    const batterGantry = components3D.find(c => c.name === 'Batter Gantry')?.postProcessingCompleted || 0;
+    const bowlerGantry = components3D.find(c => c.name === 'Bowler Gantry')?.postProcessingCompleted || 0;
     
-    // Check direct components
+    // Check purchased components
     const balls = purchasedComponents.find(c => c.name === 'Balls (3 varieties)')?.quantity || 0;
     const pitch = purchasedComponents.find(c => c.name === 'Silk Printed Felt Sheets (pre-cut)')?.quantity || 0;
     const tube = purchasedComponents.find(c => c.name === '30cmx10cm Printed Cardboard Tube')?.quantity || 0;
@@ -69,27 +59,67 @@ export default function ProductsScreen() {
     const bags = purchasedComponents.find(c => c.name === '12cmx34cm self adhesive bags')?.quantity || 0;
     const velcro = purchasedComponents.find(c => c.name === 'Velcro strips')?.quantity || 0;
     const paper = purchasedComponents.find(c => c.name === 'A4 Paper')?.quantity || 0;
+
+    return {
+      parts: {
+        bowler: { have: bowlerParts, need: 1, canMake: bowlerParts },
+        batter: { have: batterParts, need: 1, canMake: batterParts }
+      },
+      components3D: {
+        fenceCorners: { have: fenceCorners, need: 6, canMake: Math.floor(fenceCorners / 6) },
+        fenceStraight: { have: fenceStraight, need: 4, canMake: Math.floor(fenceStraight / 4) },
+        fencePlayer: { have: fencePlayer, need: 2, canMake: Math.floor(fencePlayer / 2) },
+        fielderHigh: { have: fielderHigh, need: 3, canMake: Math.floor(fielderHigh / 3) },
+        fielderMedium: { have: fielderMedium, need: 3, canMake: Math.floor(fielderMedium / 3) },
+        fielderLow: { have: fielderLow, need: 3, canMake: Math.floor(fielderLow / 3) },
+        stumps: { have: stumps, need: 1, canMake: stumps },
+        batterGantry: { have: batterGantry, need: 1, canMake: batterGantry },
+        bowlerGantry: { have: bowlerGantry, need: 1, canMake: bowlerGantry }
+      },
+      purchased: {
+        balls: { have: balls, need: 1, canMake: balls },
+        pitch: { have: pitch, need: 1, canMake: pitch },
+        tube: { have: tube, need: 1, canMake: tube },
+        mailers: { have: mailers, need: 0.5, canMake: Math.floor(mailers / 0.5) },
+        bags: { have: bags, need: 1, canMake: bags },
+        velcro: { have: velcro, need: 1, canMake: velcro },
+        paper: { have: paper, need: 1, canMake: paper }
+      }
+    };
+  };
+
+  const calculateMaxProducts = () => {
+    const availability = getComponentAvailability();
     
-    const mailerProducts = Math.floor(mailers / 0.5); // 0.5 mailers per product
-    
-    return Math.min(
-      bowlerParts,
-      batterParts,
-      fenceMaxProducts,
-      fenceStraightMax,
-      fencePlayerMax,
-      fielderHighMax,
-      fielderMediumMax,
-      fielderLowMax,
-      stumps,
-      balls,
-      pitch,
-      tube,
-      mailerProducts,
-      bags,
-      velcro,
-      paper
+    // Calculate how many sets can be made from each component type
+    const fromAssembledParts = Math.min(
+      availability.parts.bowler.canMake,
+      availability.parts.batter.canMake
     );
+    
+    const fromFullParts = Math.min(
+      availability.components3D.fenceCorners.canMake,
+      availability.components3D.fenceStraight.canMake,
+      availability.components3D.fencePlayer.canMake,
+      availability.components3D.fielderHigh.canMake,
+      availability.components3D.fielderMedium.canMake,
+      availability.components3D.fielderLow.canMake,
+      availability.components3D.stumps.canMake,
+      availability.components3D.batterGantry.canMake,
+      availability.components3D.bowlerGantry.canMake
+    );
+    
+    const fromPurchasedComponents = Math.min(
+      availability.purchased.balls.canMake,
+      availability.purchased.pitch.canMake,
+      availability.purchased.tube.canMake,
+      availability.purchased.mailers.canMake,
+      availability.purchased.bags.canMake,
+      availability.purchased.velcro.canMake,
+      availability.purchased.paper.canMake
+    );
+    
+    return Math.min(fromAssembledParts, fromFullParts, fromPurchasedComponents);
   };
 
   const handleProductAssembly = async (product: Product) => {
@@ -165,7 +195,7 @@ export default function ProductsScreen() {
         if (component) {
           await DatabaseService.updatePurchasedComponent(
             component.id,
-            component.quantity - update.quantity
+            { quantity: component.quantity - update.quantity }
           );
         }
       }
@@ -236,27 +266,93 @@ export default function ProductsScreen() {
               {/* Show what's needed for the product */}
               <View style={styles.recipeContainer}>
                 <Text style={styles.recipeTitle}>Required for 1 Complete Cricket Set:</Text>
-                <Text style={styles.recipeSubtitle}>Parts:</Text>
-                <Text style={styles.recipeItem}>• 1x Bowler (assembled)</Text>
-                <Text style={styles.recipeItem}>• 1x Batter (assembled)</Text>
                 
-                <Text style={styles.recipeSubtitle}>3D Components:</Text>
-                <Text style={styles.recipeItem}>• 6x Fence Corner</Text>
-                <Text style={styles.recipeItem}>• 4x Fence Straight</Text>
-                <Text style={styles.recipeItem}>• 2x Fence Player</Text>
-                <Text style={styles.recipeItem}>• 3x Fielder High</Text>
-                <Text style={styles.recipeItem}>• 3x Fielder Medium</Text>
-                <Text style={styles.recipeItem}>• 3x Fielder Low</Text>
-                <Text style={styles.recipeItem}>• 1x Stumps</Text>
-                
-                <Text style={styles.recipeSubtitle}>Components:</Text>
-                <Text style={styles.recipeItem}>• 1x Balls (3 varieties)</Text>
-                <Text style={styles.recipeItem}>• 1x Silk Printed Felt Sheet</Text>
-                <Text style={styles.recipeItem}>• 1x Cardboard Tube</Text>
-                <Text style={styles.recipeItem}>• 0.5x Bubble Mailer</Text>
-                <Text style={styles.recipeItem}>• 1x Self Adhesive Bag</Text>
-                <Text style={styles.recipeItem}>• 1x Velcro Strip</Text>
-                <Text style={styles.recipeItem}>• 1x A4 Paper (manual)</Text>
+                {(() => {
+                  const availability = getComponentAvailability();
+                  
+                  return (
+                    <>
+                      <Text style={styles.recipeSubtitle}>Parts:</Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Bowler (assembled) - Have: {availability.parts.bowler.have} (can make {availability.parts.bowler.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Batter (assembled) - Have: {availability.parts.batter.have} (can make {availability.parts.batter.canMake} sets)
+                      </Text>
+                      
+                      <Text style={styles.recipeSubtitle}>3D Components:</Text>
+                      <Text style={styles.recipeItem}>
+                        • 6x Fence Corner - Have: {availability.components3D.fenceCorners.have} (can make {availability.components3D.fenceCorners.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 4x Fence Straight - Have: {availability.components3D.fenceStraight.have} (can make {availability.components3D.fenceStraight.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 2x Fence Player - Have: {availability.components3D.fencePlayer.have} (can make {availability.components3D.fencePlayer.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 3x Fielder High - Have: {availability.components3D.fielderHigh.have} (can make {availability.components3D.fielderHigh.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 3x Fielder Medium - Have: {availability.components3D.fielderMedium.have} (can make {availability.components3D.fielderMedium.canMake} sets)
+                      </Text>
+                      <Text style={[styles.recipeItem, { color: availability.components3D.fielderLow.canMake === Math.min(
+                        availability.parts.bowler.canMake,
+                        availability.parts.batter.canMake,
+                        availability.components3D.fenceCorners.canMake,
+                        availability.components3D.fenceStraight.canMake,
+                        availability.components3D.fencePlayer.canMake,
+                        availability.components3D.fielderHigh.canMake,
+                        availability.components3D.fielderMedium.canMake,
+                        availability.components3D.fielderLow.canMake,
+                        availability.components3D.stumps.canMake,
+                        availability.components3D.batterGantry.canMake,
+                        availability.components3D.bowlerGantry.canMake,
+                        availability.purchased.balls.canMake,
+                        availability.purchased.pitch.canMake,
+                        availability.purchased.tube.canMake,
+                        availability.purchased.mailers.canMake,
+                        availability.purchased.bags.canMake,
+                        availability.purchased.velcro.canMake,
+                        availability.purchased.paper.canMake
+                      ) ? '#ff4444' : undefined }]}>
+                        • 3x Fielder Low - Have: {availability.components3D.fielderLow.have} (can make {availability.components3D.fielderLow.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Stumps - Have: {availability.components3D.stumps.have} (can make {availability.components3D.stumps.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Batter Gantry - Have: {availability.components3D.batterGantry.have} (can make {availability.components3D.batterGantry.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Bowler Gantry - Have: {availability.components3D.bowlerGantry.have} (can make {availability.components3D.bowlerGantry.canMake} sets)
+                      </Text>
+                      
+                      <Text style={styles.recipeSubtitle}>Components:</Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Balls (3 varieties) - Have: {availability.purchased.balls.have} (can make {availability.purchased.balls.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Silk Printed Felt Sheet - Have: {availability.purchased.pitch.have} (can make {availability.purchased.pitch.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Cardboard Tube - Have: {availability.purchased.tube.have} (can make {availability.purchased.tube.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 0.5x Bubble Mailer - Have: {availability.purchased.mailers.have} (can make {availability.purchased.mailers.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Self Adhesive Bag - Have: {availability.purchased.bags.have} (can make {availability.purchased.bags.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x Velcro Strip - Have: {availability.purchased.velcro.have} (can make {availability.purchased.velcro.canMake} sets)
+                      </Text>
+                      <Text style={styles.recipeItem}>
+                        • 1x A4 Paper - Have: {availability.purchased.paper.have} (can make {availability.purchased.paper.canMake} sets)
+                      </Text>
+                    </>
+                  );
+                })()}
               </View>
             </Card.Content>
           </Card>
